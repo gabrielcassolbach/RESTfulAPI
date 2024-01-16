@@ -1,36 +1,34 @@
 const Job = require('../models/jobs.js');
 const geoCoder = require('../utils/geocoder');
+const ErrorHandler = require('../utils/errorHandler.js');
+const catchAsyncErrors = require('../middlewares/catchAsyncErrors.js');
 
 // Get all jobs =>  /url to get all jobs.
-exports.getJobs =  async (req, res, next) => {
+exports.getJobs = catchAsyncErrors ( async (req, res, next) => {
     const jobs = await Job.find()
     res.status(200).json({
         sucess: true,
         results: jobs.length,
         data: jobs
     });
-} 
+}); 
 
 // Create a new Job => {{Domain}}/jobs.
-exports.newJob = async (req, res) => {
+exports.newJob = catchAsyncErrors ( async (req, res) => {
     const job = await Job.create(req.body);
     res.status(200).json({
         sucess: true, 
         message: 'Job Created.',
         data: job
     });
-}
+});
 
 // Update a Job => /job/:id
-exports.updateJob = async (req, res, next) => {
+exports.updateJob = catchAsyncErrors ( async (req, res, next) => {
     let job = await Job.findById(req.params.id);
 
-    if(!job){
-        return res.status(404).json({
-           sucess: false,
-           message: 'Job not found' 
-        });
-    }
+    if(!job)
+        {return next(new ErrorHandler('Job not found', 404));}
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
         new: true,
@@ -43,10 +41,10 @@ exports.updateJob = async (req, res, next) => {
         message: 'Job is updated',
         data: job
     })
-}
+});
 
 // Delete a Job => /job/:id
-exports.deleteJob = async (req, res, next) => {
+exports.deleteJob = catchAsyncErrors ( async (req, res, next) => {
     let job = await Job.findById(req.params.id);
 
     if(!job){
@@ -62,11 +60,10 @@ exports.deleteJob = async (req, res, next) => {
         sucess: true,
         message: 'Job is deleted.'
     })
-} 
-
+});
 
 // Search jobs within radius => /jobs/:zipcode/:distance
-exports.getJobsInRadius = async (req, res, next) => {
+exports.getJobsInRadius = catchAsyncErrors ( async (req, res, next) => {
     const { zipcode, distance } = req.params;
     
     // Getting latitude & longitude from geocoder with zipcode.
@@ -85,4 +82,21 @@ exports.getJobsInRadius = async (req, res, next) => {
         results: jobs.length,
         data: jobs
     })
-}
+});
+
+// Get a single job with id and slug. => /job/:id/:slug
+exports.getJob = catchAsyncErrors ( async (req, res, next) => {
+    const job = await Job.findById(req.params.id);
+
+    if(!job){
+        return res.status(404).json({
+            sucess: false,
+            message: 'Job not found'
+        })
+    }
+
+    res.status(200).json({
+        sucess: true, 
+        data: job
+    });
+});
